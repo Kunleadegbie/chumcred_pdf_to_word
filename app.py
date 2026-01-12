@@ -20,30 +20,31 @@ st.set_page_config(page_title="PDF → Word (OCR)", page_icon="🧾", layout="wi
 LOGO_PATH = os.path.join("assets", "chumcred_logo.png")
 
 if os.path.exists(LOGO_PATH):
-    # Top banner (main page)
     col1, col2 = st.columns([1, 5])
     with col1:
         st.image(LOGO_PATH, width=90)
     with col2:
         st.markdown("## Chumcred Limited")
-        st.caption("PDF → Word Converter ")
+        st.caption("PDF → Word Converter")
 
-    # Sidebar logo (optional)
     with st.sidebar:
         st.image(LOGO_PATH, width=200)
 else:
     st.warning("Logo not found. Please add: assets/chumcred_logo.png")
 
-
 # =====================================================
-# FIXES (Poppler + Tesseract paths) — minimal changes
+# OCR ENGINE CONFIG (Windows + Streamlit Cloud safe)
 # =====================================================
 POPPLER_BIN = r"C:\Users\ADEGBIE ADEKUNLE\poppler\poppler-25.12.0\Library\bin"
-os.environ["PATH"] = POPPLER_BIN + os.pathsep + os.environ.get("PATH", "")
-
 TESSERACT_EXE = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_EXE
-os.environ["PATH"] = r"C:\Program Files\Tesseract-OCR" + os.pathsep + os.environ.get("PATH", "")
+
+# Windows-only paths (ignored safely on Linux)
+if os.path.isdir(POPPLER_BIN):
+    os.environ["PATH"] = POPPLER_BIN + os.pathsep + os.environ.get("PATH", "")
+
+if os.path.exists(TESSERACT_EXE):
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_EXE
+    os.environ["PATH"] = r"C:\Program Files\Tesseract-OCR" + os.pathsep + os.environ.get("PATH", "")
 
 # -----------------------------
 # Helpers
@@ -74,7 +75,6 @@ def build_docx_from_text(pages_text: list[str], title: str = None) -> bytes:
     doc.save(buf)
     return buf.getvalue()
 
-
 # -----------------------------
 # Streamlit UI
 # -----------------------------
@@ -98,7 +98,13 @@ with st.sidebar:
         ),
     )
 
-    dpi = st.slider("Render DPI (higher = better OCR, slower)", min_value=150, max_value=400, value=250, step=50)
+    dpi = st.slider(
+        "Render DPI (higher = better OCR, slower)",
+        min_value=150,
+        max_value=400,
+        value=250,
+        step=50,
+    )
 
     st.caption(
         "Tip: For very blurry scans, try higher DPI and PSM=6. "
@@ -120,12 +126,11 @@ if uploaded:
             with st.spinner("Rendering PDF pages..."):
                 kwargs = dict(dpi=dpi)
 
-            # Only pass poppler_path if it exists (Windows local dev)
-            if os.path.isdir(POPPLER_BIN):
-            kwargs["poppler_path"] = POPPLER_BIN
+                # Only pass poppler_path on Windows
+                if os.path.isdir(POPPLER_BIN):
+                    kwargs["poppler_path"] = POPPLER_BIN
 
-            pages = convert_from_bytes(pdf_bytes, **kwargs)
-
+                pages = convert_from_bytes(pdf_bytes, **kwargs)
 
             st.success(f"Rendered {len(pages)} page(s).")
 
@@ -137,7 +142,6 @@ if uploaded:
                 status.write(f"OCR in progress: page {idx}/{len(pages)} ...")
 
                 page_img = page_img.convert("RGB")
-
                 text = ocr_image(page_img, lang=lang, psm=psm)
                 pages_text.append(text)
 
