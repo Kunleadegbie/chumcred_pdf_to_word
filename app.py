@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import shutil
 from datetime import datetime
 
 import streamlit as st
@@ -36,15 +37,23 @@ else:
 # OCR ENGINE CONFIG (Windows + Streamlit Cloud safe)
 # =====================================================
 POPPLER_BIN = r"C:\Users\ADEGBIE ADEKUNLE\poppler\poppler-25.12.0\Library\bin"
-TESSERACT_EXE = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+TESSERACT_EXE_WIN = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-# Windows-only paths (ignored safely on Linux)
-if os.path.isdir(POPPLER_BIN):
+# --- Poppler (Windows only) ---
+if os.name == "nt" and os.path.isdir(POPPLER_BIN):
     os.environ["PATH"] = POPPLER_BIN + os.pathsep + os.environ.get("PATH", "")
 
-if os.path.exists(TESSERACT_EXE):
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_EXE
-    os.environ["PATH"] = r"C:\Program Files\Tesseract-OCR" + os.pathsep + os.environ.get("PATH", "")
+# --- Tesseract (Windows OR Linux) ---
+if os.name == "nt":
+    # Windows
+    if os.path.exists(TESSERACT_EXE_WIN):
+        pytesseract.pytesseract.tesseract_cmd = TESSERACT_EXE_WIN
+        os.environ["PATH"] = r"C:\Program Files\Tesseract-OCR" + os.pathsep + os.environ.get("PATH", "")
+else:
+    # Linux (Streamlit Cloud)
+    tesseract_path = shutil.which("tesseract")
+    if tesseract_path:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 # -----------------------------
 # Helpers
@@ -127,7 +136,7 @@ if uploaded:
                 kwargs = dict(dpi=dpi)
 
                 # Only pass poppler_path on Windows
-                if os.path.isdir(POPPLER_BIN):
+                if os.name == "nt" and os.path.isdir(POPPLER_BIN):
                     kwargs["poppler_path"] = POPPLER_BIN
 
                 pages = convert_from_bytes(pdf_bytes, **kwargs)
