@@ -179,11 +179,3 @@ AI • Data • Financial Analytics
 
 MIT License — free to use, modify, and distribute.
 
-```
-
-If you want, next I can:
-- Make it **deployment-ready** (Streamlit Cloud / Railway)
-- Refactor paths to be **environment-variable driven**
-- Add a **Dockerfile**
-- Add screenshots + badges for GitHub polish
-```
