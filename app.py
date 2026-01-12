@@ -118,11 +118,14 @@ if uploaded:
 
         try:
             with st.spinner("Rendering PDF pages..."):
-                pages = convert_from_bytes(
-                    pdf_bytes,
-                    dpi=dpi,
-                    poppler_path=POPPLER_BIN
-                )
+                kwargs = dict(dpi=dpi)
+
+            # Only pass poppler_path if it exists (Windows local dev)
+            if os.path.isdir(POPPLER_BIN):
+            kwargs["poppler_path"] = POPPLER_BIN
+
+            pages = convert_from_bytes(pdf_bytes, **kwargs)
+
 
             st.success(f"Rendered {len(pages)} page(s).")
 
